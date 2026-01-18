@@ -2,10 +2,11 @@
 
 import { useState, useRef, useEffect, useMemo } from 'react'
 import ImageComparison from '@/components/ImageComparison'
-import ImageSelector from '@/components/ImageSelector'
 import Toolbar from '@/components/Toolbar'
 import CreativeAssistant from '@/components/CreativeAssistant'
+import AngleAssistant from '@/components/AngleAssistant'
 import GeneratedVersions from '@/components/GeneratedVersions'
+import VideoPlayer from '@/components/VideoPlayer'
 import { Upload, X, Type, MousePointer2 } from 'lucide-react'
 import { 
   uploadToFalStorage, 
@@ -15,8 +16,7 @@ import {
   getImageById,
   saveSelections,
   loadSelections,
-  type StoredImage,
-  type SelectionState
+  type StoredImage
 } from '@/lib/imageStorage'
 
 type PolygonPoint = {
@@ -24,8 +24,8 @@ type PolygonPoint = {
   y: number
 }
 
-type SelectionType = 'clean' | 'before' | 'after' | 'staging' | 'add-item' | 'view'
-type ActionType = 'clean' | 'stage' | 'add-item'
+type SelectionType = 'clean' | 'before' | 'after' | 'staging' | 'add-item' | 'view' | 'different-angles' | 'video'
+type ActionType = 'clean' | 'stage' | 'add-item' | 'different-angles' | 'generate-video'
 
 // Reusable Loading Overlay Component
 const LoadingOverlay = () => (
@@ -87,11 +87,14 @@ export default function Home() {
     staging: null as string | null,
     addItem: null as string | null,
     view: null as string | null,
+    differentAngles: null as string | null,
+    video: null as string | null,
   })
   const [prompts, setPrompts] = useState({
     clean: '',
     staging: '',
     addItem: '',
+    video: '',
   })
   const [loadingState, setLoadingState] = useState({
     isLoading: false,
@@ -105,6 +108,11 @@ export default function Home() {
   const [selectionMode, setSelectionMode] = useState(false)
   const [selection, setSelection] = useState<PolygonPoint[] | null>(null)
   const [sliderMode, setSliderMode] = useState(false)
+  const [angleSettings, setAngleSettings] = useState({
+    azimuth: 0,
+    elevation: 0,
+    distance: 5,
+  })
   const fileInputRef = useRef<HTMLInputElement>(null)
   const referenceImageInputRef = useRef<HTMLInputElement>(null)
 
@@ -123,49 +131,94 @@ export default function Home() {
     staging: getImageUrl(selections.staging),
     addItem: getImageUrl(selections.addItem),
     view: getImageUrl(selections.view),
+    differentAngles: getImageUrl(selections.differentAngles),
+    video: getImageUrl(selections.video),
   }), [selections, storedImages])
 
-  const displayImageUrl = imageUrls.staging || imageUrls.addItem || imageUrls.clean || imageUrls.view
+  const displayImageUrl = imageUrls.staging || imageUrls.addItem || imageUrls.clean || imageUrls.view || imageUrls.differentAngles || imageUrls.differentAngles
   const isComparisonMode = !!selections.before
 
   // Helper to handle API response
   const handleAPIResponse = (action: ActionType, data: any, originalImageId: string, prompt?: string, selection?: PolygonPoint[] | null) => {
-    const typeMap = {
-      'clean': 'cleaned' as const,
-      'stage': 'staged' as const,
-      'add-item': 'added' as const,
-    }
-    
-    const storedImage = saveImage({
-      url: data.imageUrl,
-      type: typeMap[action],
-      metadata: { prompt, selection: selection || undefined },
-    })
-    
-    setStoredImages(prev => [...prev, storedImage])
-    
-    // Update selections: original becomes "Before", generated becomes "After"
-    const selectionKey = action === 'clean' ? 'clean' : action === 'stage' ? 'staging' : 'addItem'
-    setSelections(prev => ({
-      ...prev,
-      before: originalImageId,
-      after: storedImage.id,
-      [selectionKey]: null,
-    }))
-    
-    // Save to localStorage
-    saveSelections({
-      selectedBefore: originalImageId,
-      selectedAfter: storedImage.id,
-      selectedForClean: action === 'clean' ? null : selections.clean,
-      selectedForStaging: action === 'stage' ? null : selections.staging,
-      selectedForAddItem: action === 'add-item' ? null : selections.addItem,
-      selectedForView: selections.view,
-    })
-    
-    // Clear prompt for add-item
-    if (action === 'add-item') {
-      setPrompts(prev => ({ ...prev, addItem: '' }))
+    if (action === 'generate-video') {
+      // For videos, save with videoUrl and sourceImageId
+      if (!data.videoUrl) {
+        console.error('No videoUrl in response data:', data)
+      }
+      const storedImage = saveImage({
+        url: data.imageUrl, // Original image URL
+        type: 'video',
+        videoUrl: data.videoUrl,
+        sourceImageId: originalImageId,
+        metadata: { prompt },
+      })
+      
+      setStoredImages(prev => [storedImage, ...prev])
+      
+      // After video generation, switch to view mode to show the video
+      // Clear video selection and set view selection instead
+      setSelections(prev => ({
+        ...prev,
+        video: null, // Clear video generation selection
+        view: storedImage.id, // Set to view mode to show the video
+      }))
+      
+      // Save to localStorage
+      saveSelections({
+        selectedBefore: selections.before,
+        selectedAfter: selections.after,
+        selectedForClean: selections.clean,
+        selectedForStaging: selections.staging,
+        selectedForAddItem: selections.addItem,
+        selectedForView: storedImage.id, // Set view to the generated video
+        selectedForDifferentAngles: selections.differentAngles,
+        selectedForVideo: null, // Clear video generation selection
+      })
+      
+      // Clear video prompt
+      setPrompts(prev => ({ ...prev, video: '' }))
+    } else {
+      // For other actions, use the existing logic
+      const typeMap: Record<Exclude<ActionType, 'generate-video'>, 'cleaned' | 'staged' | 'added' | 'angled'> = {
+        'clean': 'cleaned' as const,
+        'stage': 'staged' as const,
+        'add-item': 'added' as const,
+        'different-angles': 'angled' as const,
+      }
+      
+      const storedImage = saveImage({
+        url: data.imageUrl,
+        type: typeMap[action as Exclude<ActionType, 'generate-video'>],
+        metadata: { prompt, selection: selection || undefined },
+      })
+      
+      setStoredImages(prev => [storedImage, ...prev])
+      
+      // Update selections: original becomes "Before", generated becomes "After"
+      const selectionKey = action === 'clean' ? 'clean' : action === 'stage' ? 'staging' : action === 'add-item' ? 'addItem' : 'differentAngles'
+      setSelections(prev => ({
+        ...prev,
+        before: originalImageId,
+        after: storedImage.id,
+        [selectionKey]: null,
+      }))
+      
+      // Save to localStorage
+      saveSelections({
+        selectedBefore: originalImageId,
+        selectedAfter: storedImage.id,
+        selectedForClean: action === 'clean' ? null : selections.clean,
+        selectedForStaging: action === 'stage' ? null : selections.staging,
+        selectedForAddItem: action === 'add-item' ? null : selections.addItem,
+        selectedForView: selections.view,
+        selectedForDifferentAngles: action === 'different-angles' ? null : selections.differentAngles,
+        selectedForVideo: selections.video,
+      })
+      
+      // Clear prompt for add-item
+      if (action === 'add-item') {
+        setPrompts(prev => ({ ...prev, addItem: '' }))
+      }
     }
   }
 
@@ -186,6 +239,8 @@ export default function Home() {
       staging: validateAndSet(savedSelections.selectedForStaging, images),
       addItem: validateAndSet(savedSelections.selectedForAddItem, images),
       view: validateAndSet(savedSelections.selectedForView, images),
+      differentAngles: validateAndSet(savedSelections.selectedForDifferentAngles, images),
+      video: validateAndSet(savedSelections.selectedForVideo, images),
     })
     
     // Auto-select first image as "View" if no selection exists
@@ -260,7 +315,14 @@ export default function Home() {
   }
 
   // API call handler
-  const callAPI = async (action: ActionType, imageUrl: string, prompt?: string, selection?: PolygonPoint[] | null, referenceImageUrl?: string | null) => {
+  const callAPI = async (
+    action: ActionType, 
+    imageUrl: string, 
+    prompt?: string, 
+    selection?: PolygonPoint[] | null, 
+    referenceImageUrl?: string | null,
+    angleParams?: { azimuth: number, elevation: number, distance: number }
+  ) => {
     setLoadingState({ isLoading: true, action, isUploading: false })
     setError(null)
 
@@ -271,16 +333,25 @@ export default function Home() {
          prompts.staging) || 
         selectedStyle
 
+      const requestBody: any = {
+        action,
+        imageUrl,
+        prompt: promptToUse,
+        selection: selection || undefined,
+        referenceImageUrl: referenceImageUrl || undefined,
+      }
+
+      // Add angle parameters for different-angles action
+      if (action === 'different-angles' && angleParams) {
+        requestBody.horizontal_angle = angleParams.azimuth
+        requestBody.vertical_angle = angleParams.elevation
+        requestBody.zoom = angleParams.distance
+      }
+
       const response = await fetch('/api/edit', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action,
-          imageUrl,
-          prompt: promptToUse,
-          selection: selection || undefined,
-          referenceImageUrl: referenceImageUrl || undefined,
-        }),
+        body: JSON.stringify(requestBody),
       })
 
       if (!response.ok) {
@@ -291,6 +362,8 @@ export default function Home() {
       const data = await response.json()
       const originalImageId = action === 'clean' ? selections.clean : 
                              action === 'stage' ? selections.staging : 
+                             action === 'different-angles' ? selections.differentAngles :
+                             action === 'generate-video' ? selections.video :
                              selections.addItem
 
       if (originalImageId) {
@@ -352,6 +425,28 @@ export default function Home() {
     callAPI('stage', imageToUse, prompt)
   }
 
+  const handleDifferentAngles = () => {
+    const imageToUse = selections.differentAngles ? imageUrls.differentAngles : null
+    if (!imageToUse) {
+      setError('Please select an image for different angles first')
+      return
+    }
+    callAPI('different-angles', imageToUse, undefined, undefined, undefined, angleSettings)
+  }
+
+  const handleGenerateVideo = () => {
+    const imageToUse = selections.video ? imageUrls.video : null
+    if (!imageToUse) {
+      setError('Please select an image for video generation first')
+      return
+    }
+    if (!prompts.video.trim()) {
+      setError('Please enter a prompt describing the video motion/action')
+      return
+    }
+    callAPI('generate-video', imageToUse, prompts.video)
+  }
+
   // Delete image handler
   const handleDeleteImage = (imageId: string) => {
     const imageToDelete = getImageById(imageId)
@@ -371,6 +466,8 @@ export default function Home() {
         staging: selections.staging === imageId ? null : selections.staging,
         addItem: selections.addItem === imageId ? null : selections.addItem,
         view: selections.view === imageId ? null : selections.view,
+        differentAngles: selections.differentAngles === imageId ? null : selections.differentAngles,
+        video: selections.video === imageId ? null : selections.video,
       }
       
       setSelections(newSelections)
@@ -381,6 +478,8 @@ export default function Home() {
         selectedForStaging: newSelections.staging,
         selectedForAddItem: newSelections.addItem,
         selectedForView: newSelections.view,
+        selectedForDifferentAngles: newSelections.differentAngles,
+        selectedForVideo: newSelections.video,
       })
     }
   }
@@ -393,12 +492,29 @@ export default function Home() {
                          selections.view ? 'view' : 
                          selections.before ? 'before' :
                          selections.after ? 'after' :
+                         selections.differentAngles ? 'different-angles' :
+                         selections.video ? 'video' :
                          null
     
     // Clear polygon when switching states
     if (currentState !== null && currentState !== type) {
       setSelection(null)
       setSelectionMode(type === 'add-item' || type === 'clean')
+      
+      // Clear prompts when switching between different selection types
+      const promptTypes = ['clean', 'staging', 'add-item', 'video']
+      if (promptTypes.includes(currentState) && promptTypes.includes(type) && currentState !== type) {
+        // Clear the previous prompt type
+        if (currentState === 'clean') {
+          setPrompts(prev => ({ ...prev, clean: '' }))
+        } else if (currentState === 'staging') {
+          setPrompts(prev => ({ ...prev, staging: '' }))
+        } else if (currentState === 'add-item') {
+          setPrompts(prev => ({ ...prev, addItem: '' }))
+        } else if (currentState === 'video') {
+          setPrompts(prev => ({ ...prev, video: '' }))
+        }
+      }
     } else if (currentState !== null && currentState === type) {
       setSelection(null)
     }
@@ -411,6 +527,8 @@ export default function Home() {
       staging: type === 'staging' ? imageId : null,
       addItem: type === 'add-item' ? imageId : null,
       view: type === 'view' ? imageId : null,
+      differentAngles: type === 'different-angles' ? imageId : null,
+      video: type === 'video' ? imageId : null,
     }
     
     // Handle mutual exclusivity for before/after
@@ -429,6 +547,8 @@ export default function Home() {
       selectedForStaging: newSelections.staging,
       selectedForAddItem: newSelections.addItem,
       selectedForView: newSelections.view,
+      selectedForDifferentAngles: newSelections.differentAngles,
+      selectedForVideo: newSelections.video,
     })
   }
 
@@ -454,24 +574,9 @@ export default function Home() {
   const canAddItem = !!selections.addItem && !!selection && selection.length >= 3 && !!prompts.addItem.trim() && 
     (addItemMode === 'prompt' || (addItemMode === 'reference' && referenceImageUrl !== null))
   const canStage = !!selections.staging && !!prompts.staging.trim()
+  const canDifferentAngles = !!selections.differentAngles
+  const canGenerateVideo = !!selections.video && !!prompts.video.trim()
 
-  // Selection handlers factory
-  const createSelectionHandler = (type: SelectionType) => (imageId: string | null) => {
-    if (imageId) {
-      setImageSelection(type, imageId)
-    } else {
-      const newSelections = { ...selections, [type === 'before' ? 'before' : type === 'after' ? 'after' : type === 'clean' ? 'clean' : type === 'staging' ? 'staging' : type === 'add-item' ? 'addItem' : 'view']: null }
-      setSelections(newSelections)
-      saveSelections({
-        selectedBefore: newSelections.before,
-        selectedAfter: newSelections.after,
-        selectedForClean: newSelections.clean,
-        selectedForStaging: newSelections.staging,
-        selectedForAddItem: newSelections.addItem,
-        selectedForView: newSelections.view,
-      })
-    }
-  }
 
   return (
     <main className="h-screen w-screen flex bg-[#0a0a0a] text-white overflow-hidden">
@@ -479,14 +584,18 @@ export default function Home() {
         onClean={handleClean}
         onAddItem={handleAddItem}
         onStage={handleStage}
+        onDifferentAngles={handleDifferentAngles}
+        onGenerateVideo={handleGenerateVideo}
         canClean={canClean}
         canAddItem={canAddItem}
         canStage={canStage}
+        canDifferentAngles={canDifferentAngles}
+        canGenerateVideo={canGenerateVideo}
         loading={loadingState.isLoading}
       />
 
-      <div className="flex-1 flex flex-col">
-        <header className={`h-16 border-b border-white/10 flex items-center justify-between px-6 transition-all duration-300 ${selections.staging ? 'pr-[340px]' : 'pr-6'}`}>
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+        <header className={`h-16 border-b border-white/10 flex items-center justify-between px-6 transition-all duration-300 ${selections.staging || selections.differentAngles ? 'pr-[340px]' : 'pr-6'}`}>
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 rounded-sm flex items-center justify-center bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 shadow-lg">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -548,7 +657,7 @@ export default function Home() {
           />
         )}
 
-        {displayImageUrl && selections.staging && !selections.clean && !selections.addItem && !selections.view && (
+        {displayImageUrl && selections.staging && !selections.clean && !selections.addItem && !selections.view && !selections.video && (
           <PromptInput
             label="Staging style:"
             value={prompts.staging}
@@ -556,6 +665,17 @@ export default function Home() {
             onClear={() => setPrompts(prev => ({ ...prev, staging: '' }))}
             placeholder="e.g., modern, industrial, scandinavian, boho..."
             onEnter={canStage ? handleStage : undefined}
+          />
+        )}
+
+        {selections.video && !selections.clean && !selections.addItem && !selections.view && !selections.staging && (
+          <PromptInput
+            label="Video prompt:"
+            value={prompts.video}
+            onChange={(value) => setPrompts(prev => ({ ...prev, video: value }))}
+            onClear={() => setPrompts(prev => ({ ...prev, video: '' }))}
+            placeholder="e.g., room rotates 360 degrees, slow rotation showing all angles..."
+            onEnter={canGenerateVideo ? handleGenerateVideo : undefined}
           />
         )}
 
@@ -653,16 +773,51 @@ export default function Home() {
                 sliderMode={sliderMode && !!imageUrls.before && !!imageUrls.after}
                 onToggleSlider={() => setSliderMode(!sliderMode)}
               />
-            ) : selectionMode && (displayImageUrl || imageUrls.before) && !selections.view ? (
-              <ImageSelector
-                key={`${selections.clean ? 'clean' : selections.addItem ? 'add-item' : 'none'}-${displayImageUrl || imageUrls.before}`}
-                imageUrl={displayImageUrl || imageUrls.before || ''}
-                onSelectionChange={setSelection}
-                disabled={loadingState.isLoading}
-                onProcess={undefined}
-                showProcessButton={false}
-                isProcessing={loadingState.isLoading && loadingState.action === 'clean'}
-              />
+            ) : selections.video && imageUrls.video ? (
+              // Show image when selected for video generation (before video is generated)
+              <div className="relative w-full h-full overflow-y-auto overflow-x-hidden bg-black">
+                {loadingState.isLoading && <LoadingOverlay />}
+                <div className="flex justify-center">
+                  <img
+                    src={imageUrls.video}
+                    alt="Image"
+                    className="max-w-full h-auto object-contain"
+                    style={{ display: 'block' }}
+                  />
+                </div>
+              </div>
+            ) : selections.view && imageUrls.view ? (
+              // Display video player when viewing a video, or show image for regular view
+              <div className="relative w-full h-full overflow-hidden bg-black">
+                {loadingState.isLoading && <LoadingOverlay />}
+                {(() => {
+                  // Use getImageById to get the latest data from localStorage (not state)
+                  const viewImage = selections.view ? getImageById(selections.view) : null
+                  
+                  // Check if this is a video type with a videoUrl
+                  if (viewImage?.type === 'video' && viewImage?.videoUrl) {
+                    // Show video player when viewing a generated video
+                    const sourceImageUrl = viewImage?.sourceImageId 
+                      ? getImageUrl(viewImage.sourceImageId) 
+                      : imageUrls.view
+                    return <VideoPlayer videoUrl={viewImage.videoUrl} sourceImageUrl={sourceImageUrl || undefined} />
+                  } else {
+                    // Show image normally for regular view
+                    return (
+                      <div className="relative w-full h-full overflow-y-auto overflow-x-hidden bg-black">
+                        <div className="flex justify-center">
+                          <img
+                            src={imageUrls.view}
+                            alt="Image"
+                            className="max-w-full h-auto object-contain"
+                            style={{ display: 'block' }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  }
+                })()}
+              </div>
             ) : displayImageUrl ? (
               <div className="relative w-full h-full overflow-y-auto overflow-x-hidden bg-black">
                 {loadingState.isLoading && <LoadingOverlay />}
@@ -691,9 +846,9 @@ export default function Home() {
           </div>
 
           {/* Only show upload overlay for main upload (when no image is displayed) */}
-          {loadingState.isUploading && !displayImageUrl && !imageUrls.before && <LoadingOverlay />}
+          {loadingState.isUploading && !displayImageUrl && !imageUrls.before && !selections.video && <LoadingOverlay />}
 
-          {!displayImageUrl && !imageUrls.before && !loadingState.isLoading && !loadingState.isUploading && (
+          {!displayImageUrl && !imageUrls.before && !selections.video && !loadingState.isLoading && !loadingState.isUploading && (
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="text-center pointer-events-auto">
                 <button
@@ -722,9 +877,10 @@ export default function Home() {
           )}
         </div>
 
-        <div className="h-32 border-t border-white/10 flex items-center px-6 gap-4">
-          <span className="text-xs font-medium text-white/60">Generated Versions</span>
-          <GeneratedVersions
+        <div className="h-32 border-t border-white/10 flex items-center px-6 gap-4 relative z-50 min-w-0 overflow-hidden">
+          <span className="text-xs font-medium text-white/60 flex-shrink-0">Generated Versions</span>
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <GeneratedVersions
             images={storedImages}
             selectedBefore={selections.before}
             selectedAfter={selections.after}
@@ -732,21 +888,21 @@ export default function Home() {
             selectedForStaging={selections.staging}
             selectedForAddItem={selections.addItem}
             selectedForView={selections.view}
+            selectedForDifferentAngles={selections.differentAngles}
+            selectedForVideo={selections.video}
             onSetImageSelection={setImageSelection}
-            onSelectBefore={createSelectionHandler('before')}
-            onSelectAfter={createSelectionHandler('after')}
-            onSelectForClean={createSelectionHandler('clean')}
-            onSelectForStaging={createSelectionHandler('staging')}
             onDelete={handleDeleteImage}
           />
+          </div>
         </div>
       </div>
 
+      {/* Staging Assistant */}
       <div
         className={`
           fixed right-0 top-0 h-full z-40
           transition-all duration-300 ease-in-out
-          ${selections.staging
+          ${selections.staging && !selections.differentAngles
             ? 'translate-x-0 opacity-100'
             : 'translate-x-full opacity-0 pointer-events-none'
           }
@@ -757,6 +913,27 @@ export default function Home() {
           onPromptChange={handlePromptChange}
           selectedStyle={selectedStyle}
           customPrompt={prompts.staging}
+        />
+      </div>
+
+      {/* Angle Assistant */}
+      <div
+        className={`
+          fixed right-0 top-0 h-full z-40
+          transition-all duration-300 ease-in-out
+          ${selections.differentAngles
+            ? 'translate-x-0 opacity-100'
+            : 'translate-x-full opacity-0 pointer-events-none'
+          }
+        `}
+      >
+        <AngleAssistant
+          onAngleChange={(azimuth, elevation, distance) => {
+            setAngleSettings({ azimuth, elevation, distance })
+          }}
+          azimuth={angleSettings.azimuth}
+          elevation={angleSettings.elevation}
+          distance={angleSettings.distance}
         />
       </div>
     </main>

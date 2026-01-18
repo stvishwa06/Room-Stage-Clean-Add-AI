@@ -1,8 +1,10 @@
 export interface StoredImage {
   id: string;
   url: string; // fal.storage URL
-  type: 'original' | 'cleaned' | 'staged' | 'reference' | 'added';
+  type: 'original' | 'cleaned' | 'staged' | 'reference' | 'added' | 'angled' | 'video';
   timestamp: number;
+  videoUrl?: string; // URL of generated video (for type 'video')
+  sourceImageId?: string; // ID of source image used to generate video
   metadata?: {
     prompt?: string;
     selection?: Array<{
@@ -50,6 +52,9 @@ export function saveImage(image: Omit<StoredImage, 'id' | 'timestamp'>): StoredI
   localStorage.setItem(STORAGE_KEY, JSON.stringify(images));
 
   console.log('[localStorage] Image saved:', storedImage.url);
+  if (storedImage.type === 'video') {
+    console.log('[localStorage] Video saved with videoUrl:', storedImage.videoUrl, 'sourceImageId:', storedImage.sourceImageId);
+  }
 
   return storedImage;
 }
@@ -99,6 +104,8 @@ export interface SelectionState {
   selectedForStaging: string | null;
   selectedForAddItem: string | null;
   selectedForView: string | null;
+  selectedForDifferentAngles: string | null;
+  selectedForVideo: string | null;
 }
 
 export function saveSelections(selections: SelectionState): void {
@@ -120,6 +127,8 @@ export function loadSelections(): SelectionState {
       selectedForStaging: null,
       selectedForAddItem: null,
       selectedForView: null,
+      selectedForDifferentAngles: null,
+      selectedForVideo: null,
     };
   }
   
@@ -132,6 +141,8 @@ export function loadSelections(): SelectionState {
       selectedForStaging: null,
       selectedForAddItem: null,
       selectedForView: null,
+      selectedForDifferentAngles: null,
+      selectedForVideo: null,
     };
     // Ensure backward compatibility
     if (!selections.hasOwnProperty('selectedForAddItem')) {
@@ -139,6 +150,12 @@ export function loadSelections(): SelectionState {
     }
     if (!selections.hasOwnProperty('selectedForView')) {
       selections.selectedForView = null;
+    }
+    if (!selections.hasOwnProperty('selectedForDifferentAngles')) {
+      selections.selectedForDifferentAngles = null;
+    }
+    if (!selections.hasOwnProperty('selectedForVideo')) {
+      selections.selectedForVideo = null;
     }
     console.log('[localStorage] Selections loaded:', selections);
     return selections;
@@ -151,6 +168,8 @@ export function loadSelections(): SelectionState {
       selectedForStaging: null,
       selectedForAddItem: null,
       selectedForView: null,
+      selectedForDifferentAngles: null,
+      selectedForVideo: null,
     };
   }
 }

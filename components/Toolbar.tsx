@@ -1,14 +1,18 @@
 'use client'
 
-import { Sparkles, Sofa, Plus } from 'lucide-react'
+import { Sparkles, Sofa, Plus, Camera, Video } from 'lucide-react'
 
 interface ToolbarProps {
   onClean: () => void
   onAddItem: () => void
   onStage: () => void
+  onDifferentAngles: () => void
+  onGenerateVideo: () => void
   canClean: boolean
   canAddItem: boolean
   canStage: boolean
+  canDifferentAngles: boolean
+  canGenerateVideo: boolean
   loading?: boolean
 }
 
@@ -16,9 +20,13 @@ export default function Toolbar({
   onClean,
   onAddItem,
   onStage,
+  onDifferentAngles,
+  onGenerateVideo,
   canClean,
   canAddItem,
   canStage,
+  canDifferentAngles,
+  canGenerateVideo,
   loading = false 
 }: ToolbarProps) {
   const buttons = [
@@ -42,6 +50,20 @@ export default function Toolbar({
       icon: Sofa,
       onClick: onStage,
       enabled: canStage && !loading,
+    },
+    {
+      id: 'different-angles',
+      label: 'Different Angles',
+      icon: Camera,
+      onClick: onDifferentAngles,
+      enabled: canDifferentAngles && !loading,
+    },
+    {
+      id: 'generate-video',
+      label: 'Generate Video',
+      icon: Video,
+      onClick: onGenerateVideo,
+      enabled: canGenerateVideo && !loading,
     },
   ]
 

@@ -54,7 +54,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const { action, imageUrl, prompt, selection, referenceImageUrl } = await req.json();
+    const { action, imageUrl, prompt, selection, referenceImageUrl, horizontal_angle, vertical_angle, zoom, duration } = await req.json();
 
     if (!imageUrl) {
       return Response.json({ error: "Image URL is required" }, { status: 400 });
@@ -151,6 +151,63 @@ export async function POST(req: Request) {
         // Handle both result.data and result directly
         const addItemData = result.data || result;
         return Response.json({ imageUrl: addItemData.images[0].url });
+
+      case "different-angles":
+        // Generate image from different camera angle
+        if (horizontal_angle === undefined || vertical_angle === undefined || zoom === undefined) {
+          return Response.json({ error: "Angle parameters (horizontal_angle, vertical_angle, zoom) are required for different angles" }, { status: 400 });
+        }
+        result = await fal.subscribe("fal-ai/qwen-image-edit-2511-multiple-angles", {
+          input: {
+            image_urls: [imageUrl],
+            horizontal_angle: horizontal_angle,
+            vertical_angle: vertical_angle,
+            zoom: zoom,
+            lora_scale: 1,
+            guidance_scale: 4.5,
+            num_inference_steps: 28,
+            acceleration: "regular",
+            enable_safety_checker: true,
+            output_format: "png",
+            num_images: 1,
+          }
+        });
+        // Handle both result.data and result directly
+        const angleData = result.data || result;
+        return Response.json({ imageUrl: angleData.images[0].url });
+
+      case "generate-video":
+        // Generate video from image using kling-video API
+        if (!prompt) {
+          return Response.json({ error: "Prompt is required for video generation" }, { status: 400 });
+        }
+        // Duration must be exactly 5 or 10 (enum values for this API)
+        const videoDuration = (duration === 5 || duration === 10) ? duration : 5;
+        
+        result = await fal.subscribe("fal-ai/kling-video/v2.5-turbo/pro/image-to-video", {
+          input: {
+            image_url: imageUrl,
+            prompt: prompt,
+            duration: videoDuration,
+            negative_prompt: "blur, distort, and low quality",
+            cfg_scale: 0.75,
+          }
+        });
+        // Handle both result.data and result directly
+        const videoData: any = result.data || result;
+        // Extract video URL from response
+        // Expected structure: { video: { url: "...", content_type: "video/mp4", ... } }
+        const videoUrl = videoData.video?.url;
+        
+        if (!videoUrl) {
+          return Response.json({ error: "Failed to extract video URL from response" }, { status: 500 });
+        }
+        
+        // Return both original image URL and generated video URL
+        return Response.json({ 
+          imageUrl: imageUrl, // Original image URL
+          videoUrl: videoUrl 
+        });
 
       default:
         return Response.json({ error: "Invalid action" }, { status: 400 });

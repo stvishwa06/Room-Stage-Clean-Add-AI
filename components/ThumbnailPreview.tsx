@@ -12,6 +12,8 @@ interface ThumbnailPreviewProps {
   selectedForStaging?: string | null
   selectedForAddItem?: string | null
   selectedForView?: string | null
+  selectedForDifferentAngles?: string | null
+  selectedForVideo?: string | null
 }
 
 const getTypeLabel = (type: StoredImage['type']) => {
@@ -21,6 +23,8 @@ const getTypeLabel = (type: StoredImage['type']) => {
     staged: 'Staged',
     reference: 'Reference',
     added: 'Add Item',
+    angled: 'Different Angles',
+    video: 'Video',
   }
   return labels[type] || 'Image'
 }
@@ -34,7 +38,9 @@ export default function ThumbnailPreview({
   selectedAfter,
   selectedForStaging,
   selectedForAddItem,
-  selectedForView
+  selectedForView,
+  selectedForDifferentAngles,
+  selectedForVideo
 }: ThumbnailPreviewProps) {
   if (!isVisible || !image) return null
 
@@ -42,6 +48,10 @@ export default function ThumbnailPreview({
   let borderColor = 'border-white/20' // default
   if (selectedForView === image.id) {
     borderColor = 'border-gray-500'
+  } else if (selectedForDifferentAngles === image.id) {
+    borderColor = 'border-purple-500'
+  } else if (selectedForVideo === image.id) {
+    borderColor = 'border-indigo-500'
   } else if (selectedForClean === image.id) {
     borderColor = 'border-cyan-500'
   } else if (selectedBefore === image.id) {
@@ -68,7 +78,7 @@ export default function ThumbnailPreview({
             <img
               src={image.url}
               alt={getTypeLabel(image.type)}
-              className="w-full h-full object-cover"
+              className="w-full h-full"
             />
           </div>
           <div className="bg-black/60 px-4 py-2 border-t border-white/20 flex-shrink-0">

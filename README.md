@@ -2,6 +2,9 @@
 
 The app is a real estate image editing application that uses advanced AI models to transform interior photos. It lets you clean unwanted objects, stage rooms in different styles, and add furniture or décor with just a few clicks or prompts. The app makes creating high-quality, photorealistic room visuals fast, intuitive, and perfect for real estate listings or interior design mockups.
 
+#### ✨Enhanced with Multiple Angles and Video Generation
+
+Users can generate new views from any camera angle and create dynamic videos from static images. It offers full control over azimuth (horizontal rotation), elevation (vertical angle), and zoom (camera distance), allowing realistic visualizations from floor-level, eye-level, or top-down perspectives. Videos can then be generated with smooth motion, perfect for virtual walkthroughs, interior design, or real estate presentations.
 
 ---
 
@@ -35,10 +38,13 @@ The app is a real estate image editing application that uses advanced AI models 
   2. **Prompt + Reference Image** – guides AI to match the reference.
 - Supports polygon selection for precise placement.
 
-#### 5. Advanced Features (not implemented) 🔄
-- **Depth Mapping** – calculate room layouts to check if furniture fits.  
-- **Multi-Angle Generation** – rotate camera for different perspectives and immersive walkthroughs.
+#### 5. Multiple Angles & Camera Control 🔄📐
+Generate new views of a room from different camera positions using a single image.  
+Control **azimuth** (horizontal rotation), **elevation** (vertical angle), and **zoom** (camera distance) to visualize spaces from floor-level, eye-level, or top-down perspectives.
 
+#### 6. Video Generation 🎥✨
+Convert static room images into smooth, immersive videos.  
+Use simple text prompts such as *“360-degree rotation”* or *“slow pan across the room”*, and select a duration of 5 or 10 seconds to create realistic walkthroughs, virtual tours, or dynamic presentations.
 ---
 
 #### 👉 Links & Resources
@@ -48,7 +54,9 @@ The app is a real estate image editing application that uses advanced AI models 
 - [Object Removal Model](https://fal.ai/models/fal-ai/object-removal)  
 - [Object Removal Mask Model](https://fal.ai/models/fal-ai/object-removal/mask)  
 - [Inpaint Model](https://fal.ai/models/fal-ai/flux-kontext-lora/inpaint)  
-- [Fill Model](https://fal.ai/models/fal-ai/flux-pro/v1/fill)  
+- [Fill Model](https://fal.ai/models/fal-ai/flux-pro/v1/fill) 
+- [Multiple Angles Model](https://fal.ai/models/fal-ai/qwen-image-edit-2511-multiple-angles) 
+- [Image to Video Model](https://fal.ai/models/fal-ai/kling-video/v2.5-turbo/pro/image-to-video)  
 ---
 
 #### 🚀 Clone and Run
@@ -75,4 +83,5 @@ npm run dev
 
 - Open the **Run** view (`View → Run` or `Ctrl+Shift+D`) to access the debug configuration
 
-📺 **Video:** [Watch on YouTube](https://youtu.be/yqsgr9Z5MJo)
+📺 **Video: (Cleaning, Staging & Adding Items)** [Watch on YouTube](https://youtu.be/yqsgr9Z5MJo) 
+📺 **Video: (Multiple Angles and Video Generation)** [Watch on YouTube](https://youtu.be/DKne0nvZxJA) 
