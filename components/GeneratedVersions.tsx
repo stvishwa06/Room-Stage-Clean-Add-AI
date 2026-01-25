@@ -34,10 +34,23 @@ export default function GeneratedVersions({
   onSetImageSelection,
   onDelete,
 }: GeneratedVersionsProps) {
-  const [contextMenu, setContextMenu] = useState<{ imageId: string; x: number; y: number; openUp: boolean } | null>(null)
+  const getContextMenuVerticalOffsetPx = (variant: 'full' | 'restricted') => {
+    // Non-video/full menu: move up 30px. Video/3D restricted menu: keep slightly higher.
+    return variant === 'full' ? -220 : -55
+  }
+
+  const [contextMenu, setContextMenu] = useState<{
+    imageId: string
+    x: number
+    y: number
+    openUp: boolean
+    variant: 'full' | 'restricted'
+    anchorY: number
+  } | null>(null)
   const [previewImage, setPreviewImage] = useState<StoredImage | null>(null)
   const [isPreviewVisible, setIsPreviewVisible] = useState(false)
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const contextMenuRef = useRef<HTMLDivElement | null>(null)
 
   // Cleanup timeout on unmount
   useEffect(() => {
@@ -48,34 +61,70 @@ export default function GeneratedVersions({
     }
   }, [])
 
+  // After opening, re-position using the actual rendered menu height (fixes alignment for full menu).
+  useEffect(() => {
+    if (!contextMenu) return
+    if (!contextMenuRef.current) return
+
+    const raf = window.requestAnimationFrame(() => {
+      const el = contextMenuRef.current
+      if (!el) return
+
+      const rect = el.getBoundingClientRect()
+      const menuHeight = rect.height
+      const viewportHeight = window.innerHeight
+      const verticalOffsetPx = getContextMenuVerticalOffsetPx(contextMenu.variant)
+
+      // Center around the anchor (thumbnail middle) + desired offset, then clamp.
+      let nextTop = contextMenu.anchorY - menuHeight / 2 + verticalOffsetPx
+      if (nextTop < 10) nextTop = 10
+      if (nextTop + menuHeight > viewportHeight - 10) {
+        nextTop = viewportHeight - menuHeight - 10
+        if (nextTop < 10) nextTop = 10
+      }
+
+      if (Math.abs(nextTop - contextMenu.y) >= 1) {
+        setContextMenu((prev) => {
+          if (!prev) return prev
+          // If the menu changed since scheduling the RAF, ignore this update.
+          if (prev.imageId !== contextMenu.imageId) return prev
+          return {
+            ...prev,
+            y: nextTop,
+            openUp: nextTop < prev.anchorY,
+          }
+        })
+      }
+    })
+
+    return () => {
+      window.cancelAnimationFrame(raf)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contextMenu?.imageId, contextMenu?.variant])
+
   const handleContextMenu = (e: React.MouseEvent, imageId: string) => {
     e.preventDefault()
+
+    const clickedImage = images.find((img) => img.id === imageId)
+    const variant: 'full' | 'restricted' =
+      clickedImage?.type === 'video' || clickedImage?.type === '3d-object' ? 'restricted' : 'full'
     
-    // Calculate if menu should open upward
-    // Menu has: View, separator, Clean, Staging, Add Item, separator, Before, After, separator, Different Angles, Video Generation, separator, Download, separator, Delete = ~420px
-    const menuHeight = 420 // Approximate menu height in pixels (updated for all items)
+    // Full menu has many items (~420px). Restricted menu (video/3D) shows only View/Download/Delete.
+    const menuHeight = variant === 'restricted' ? 160 : 420 // Approximate menu height in pixels
     const viewportHeight = window.innerHeight
-    const clickY = e.clientY
-    const spaceBelow = viewportHeight - clickY
-    const spaceAbove = clickY
-    
-    // Prefer opening upward if there's not enough space below, or if there's more space above
-    const openUp = spaceBelow < menuHeight || (spaceAbove > spaceBelow && spaceAbove >= menuHeight)
-    
-    // Calculate top position: if opening up, position above click point
-    let topPosition: number
-    if (openUp) {
-      topPosition = clickY - menuHeight + 20 // Move down by 20px
-      // Ensure it doesn't go off the top of the screen
-      if (topPosition < 10) {
-        topPosition = 10 // Small margin from top
-      }
-    } else {
-      topPosition = clickY + 20 // Move down by 20px
-      // Ensure it doesn't go off the bottom of the screen
-      if (topPosition + menuHeight > viewportHeight - 10) {
-        topPosition = viewportHeight - menuHeight - 10 // Position above bottom with margin
-      }
+
+    // Anchor menu vertically to the thumbnail's middle (not the click position)
+    const thumbRect = (e.currentTarget as HTMLElement).getBoundingClientRect()
+    const anchorY = thumbRect.top + thumbRect.height / 2
+    const verticalOffsetPx = getContextMenuVerticalOffsetPx(variant)
+
+    // Center the menu around the thumbnail middle, then clamp into viewport
+    let topPosition = anchorY - menuHeight / 2 + verticalOffsetPx
+    if (topPosition < 10) topPosition = 10
+    if (topPosition + menuHeight > viewportHeight - 10) {
+      topPosition = viewportHeight - menuHeight - 10
+      if (topPosition < 10) topPosition = 10
     }
     
     // Also check if menu would go off the right edge
@@ -95,7 +144,9 @@ export default function GeneratedVersions({
       imageId, 
       x: leftPosition, 
       y: topPosition,
-      openUp 
+      openUp: topPosition < anchorY,
+      variant,
+      anchorY,
     })
   }
 
@@ -369,6 +420,7 @@ export default function GeneratedVersions({
             onClick={() => setContextMenu(null)}
           />
           <div
+            ref={contextMenuRef}
             className="fixed z-50 bg-black/90 border border-white/20 rounded-lg shadow-lg py-1 min-w-[150px]"
             style={{ 
               left: `${contextMenu.x}px`, 
@@ -381,58 +433,64 @@ export default function GeneratedVersions({
             >
               View
             </button>
-            <div className="border-t border-white/10 my-1" />
-            <button
-              onClick={() => handleContextAction('staging')}
-              className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10"
-            >
-              Use for Staging
-            </button>
-            <button
-              onClick={() => handleContextAction('clean')}
-              className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10"
-            >
-              Use for Clean
-            </button>
-            <button
-              onClick={() => handleContextAction('add-item')}
-              className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10"
-            >
-              Use for Add Item
-            </button>
-            <div className="border-t border-white/10 my-1" />
-            <button
-              onClick={() => handleContextAction('before')}
-              className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10"
-            >
-              Set as Before
-            </button>
-            <button
-              onClick={() => handleContextAction('after')}
-              className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10"
-            >
-              Set as After
-            </button>
-            <div className="border-t border-white/10 my-1" />
-            <button
-              onClick={() => handleContextAction('view-angles')}
-              className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10"
-            >
-              Set Different Angles
-            </button>
-            <button
-              onClick={() => handleContextAction('generate-video')}
-              className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10"
-            >
-              Set for Video Generation
-            </button>
-            <div className="border-t border-white/10 my-1" />
-            <button
-              onClick={() => handleContextAction('convert-to-3d')}
-              className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10"
-            >
-              Convert to 3D
-            </button>
+
+            {contextMenu.variant === 'full' && (
+              <>
+                <div className="border-t border-white/10 my-1" />
+                <button
+                  onClick={() => handleContextAction('staging')}
+                  className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10"
+                >
+                  Use for Staging
+                </button>
+                <button
+                  onClick={() => handleContextAction('clean')}
+                  className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10"
+                >
+                  Use for Clean
+                </button>
+                <button
+                  onClick={() => handleContextAction('add-item')}
+                  className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10"
+                >
+                  Use for Add Item
+                </button>
+                <div className="border-t border-white/10 my-1" />
+                <button
+                  onClick={() => handleContextAction('before')}
+                  className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10"
+                >
+                  Set as Before
+                </button>
+                <button
+                  onClick={() => handleContextAction('after')}
+                  className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10"
+                >
+                  Set as After
+                </button>
+                <div className="border-t border-white/10 my-1" />
+                <button
+                  onClick={() => handleContextAction('view-angles')}
+                  className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10"
+                >
+                  Set Different Angles
+                </button>
+                <button
+                  onClick={() => handleContextAction('generate-video')}
+                  className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10"
+                >
+                  Set for Video Generation
+                </button>
+                <div className="border-t border-white/10 my-1" />
+                <button
+                  onClick={() => handleContextAction('convert-to-3d')}
+                  className="w-full px-3 py-2 text-left text-sm text-white hover:bg-white/10"
+                >
+                  Convert to 3D
+                </button>
+              </>
+            )}
+
             <div className="border-t border-white/10 my-1" />
             <button
               onClick={() => handleContextAction('download')}
